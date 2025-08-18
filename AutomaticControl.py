@@ -59,16 +59,23 @@ def checking_function(seconds_to_wait: float, seconds_between_check: float, x_re
     return True
 
 if __name__ == '__main__':
-    # get time to move to the turbine sheet and click on it
-    time.sleep(5)
-    # prepare a saving logbook
-    logbook = []
+    #########################
+    ## TO FILL ####
+    #########################
+    # time interval to check if turbine is stopped
+    seconds_between_check = 5*60
+
     # position to enter SP
     x_click = 1705
     y_click = 120
     # position to read SP
     x_read = 1720
     y_read = 120
+
+    # prepare a saving logbook
+    logbook = []
+    # get time to move to the turbine sheet and click on it
+    time.sleep(5)
     # save start time
     start_time = time.localtime()
     # we create the Arduino communication
@@ -83,12 +90,13 @@ if __name__ == '__main__':
     goToNoEGR = False
     # we loop through the testing sheet
     for index, row in df_test.iterrows():
-        if goToNoEGR: # if I should reach a state without EGR
+        if goToNoEGR: # if I should reach a state without EGR bcs of a flameout
             # check if the state has no EGR
             IsNoEGR = (row['inner_close'] == 1 and row['extern_close']==1 and row['back_pressure']==0)
-            if IsNoEGR: # je n'ai pas d'EGR dans mon state --> ok je peux l'appliquer et je ne chercherai plus à atteindre 0 EGR
+            if IsNoEGR: # je n'ai pas d'EGR dans mon state --> ok je peux l'appliquer et je ne chercherai plus à atteindre 0 EGR et je rajoute du temps pour stabilisation
                 applyState = True
                 goToNoEGR = False
+                row['delay_before_next']+=60 # on rajoute 60 minutes pour que ça redémarre + stabilisation
             else: # j'ai de l'EGR, je continue la recherche et je n'applique pas cet état
                 applyState = False
                 goToNoEGR = True
@@ -110,8 +118,6 @@ if __name__ == '__main__':
             print(to_save)
             # seconds to wait before next set point
             seconds_to_wait = row['delay_before_next']*60
-            # time interval to check if turbine is stopped
-            seconds_between_check = 5*60
             check_result = checking_function(seconds_to_wait, seconds_between_check, x_read, y_read)
             if check_result == False:
                 goToNoEGR = True
