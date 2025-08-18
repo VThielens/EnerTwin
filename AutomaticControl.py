@@ -48,6 +48,15 @@ def check_SP(SP_given, x_read, y_read):
     else:
         return True # si identique, on retourne TRUE
 
+def checking_function(seconds_to_wait: float, seconds_between_check: float, x_read, y_read):
+    # size of the vector
+    n_check = int(np.ceil(seconds_to_wait/seconds_between_check))
+    for i in range(n_check):
+        time.sleep(seconds_between_check)
+        check_result = check_SP(row['SP'], x_read, y_read) # check if SP != value it has been given
+        if check_result == False:
+            return False
+    return True
 
 if __name__ == '__main__':
     # get time to move to the turbine sheet and click on it
@@ -65,7 +74,7 @@ if __name__ == '__main__':
     # we create the Arduino communication
     arduino = sr.Serial(port='COM5', baudrate=9600, timeout=.1) 
     # open the excel with testing set
-    file = askopenfile(mode ='r', filetypes =[('Excel Files', '*.xlsx')])
+    file = "file_to_read"
     # we read the testing sheet
     df_test = pd.read_excel(file)
     # create a Boolean if we can apply the state
@@ -103,15 +112,15 @@ if __name__ == '__main__':
             seconds_to_wait = row['delay_before_next']*60
             # time interval to check if turbine is stopped
             seconds_between_check = 5*60
-            # size of the vector
-            n_check = np.ceil(seconds_to_wait/seconds_between_check)
-            for i in range(n_check):
-                time.sleep(seconds_between_check)
-                check_result = check_SP(row['SP'], x_read, y_read) # check if SP != value it has been given
-                if check_result == False:
-                    goToNoEGR = True
-                    to_save['comment'] = 'Error'
-                    break # je quitte la boucle
+            check_result = checking_function(seconds_to_wait, seconds_between_check, x_read, y_read)
+            if check_result == False:
+                goToNoEGR = True
+                to_save['time'] =str(datetime.datetime.now())
+                to_save['comment'] = 'Error'
+                logbook.append(to_save)
+            
+            
+            
     # save name
     save_name = time.strftime("%Y%m%d_%H%M%S",start_time)
     
