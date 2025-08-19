@@ -32,7 +32,7 @@ def read_arduino(arduino: sr.Serial):
     data = arduino.readline() 
     return data
 
-def check_SP(SP_given, x_read, y_read):
+def check_SP(SP_given, position_x, position_y):
     # we move the cursor to the right location
     pya.moveTo(position_x, position_y)
     # we click at that point
@@ -42,8 +42,10 @@ def check_SP(SP_given, x_read, y_read):
     # let delay
     time.sleep(0.1)
     # take the copied set point
-    SP_copied = float(pyperclip.paste())
-    if SP_copied != SP_given: # si différent on retourne FALSE
+    SP_copied = float(pyperclip.paste().replace(',','.'))
+    # we need to round it
+    SP_rounded = np.round(SP_copied,1)
+    if SP_rounded != SP_given: # si différent on retourne FALSE
         return False
     else:
         return True # si identique, on retourne TRUE
@@ -63,14 +65,15 @@ if __name__ == '__main__':
     ## TO FILL ####
     #########################
     # time interval to check if turbine is stopped
-    seconds_between_check = 5*60
-
+    seconds_between_check = 1*60
     # position to enter SP
-    x_click = 1705
-    y_click = 120
+    x_click = 1790
+    y_click = 195
     # position to read SP
-    x_read = 1720
-    y_read = 120
+    x_read = 1734
+    y_read = 199
+    # open the excel with testing set
+    file = r"C:\Users\MTT\Desktop\TestTHIELENS\GitHub\testing_campaign_test.xlsx"
 
     # prepare a saving logbook
     logbook = []
@@ -80,8 +83,7 @@ if __name__ == '__main__':
     start_time = time.localtime()
     # we create the Arduino communication
     arduino = sr.Serial(port='COM5', baudrate=9600, timeout=.1) 
-    # open the excel with testing set
-    file = "file_to_read"
+    
     # we read the testing sheet
     df_test = pd.read_excel(file)
     # create a Boolean if we can apply the state
@@ -124,9 +126,7 @@ if __name__ == '__main__':
                 to_save['time'] =str(datetime.datetime.now())
                 to_save['comment'] = 'Error'
                 logbook.append(to_save)
-            
-            
-            
+     
     # save name
     save_name = time.strftime("%Y%m%d_%H%M%S",start_time)
     
