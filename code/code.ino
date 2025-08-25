@@ -15,7 +15,6 @@ DallasTemperature sensors(&oneWire);
 double temp_SP = -100.0, temp_measured = 0.0, temp_resist_control = 0.0; // default temperature is negative to avoid overwarming
 const double MAX_DURATION = 100; // PWM period in milliseconds
 
-
 const double Kp_temp = 2, Ki_temp = 5, Kd_temp = 1;
 PID myPID_temp(&temp_measured, &temp_resist_control, &temp_SP, Kp_temp, Ki_temp, Kd_temp, DIRECT);
 
@@ -40,10 +39,10 @@ void thermalOutput(double percentage, double maxDuration, int pinOut, double fre
 Servo external_valve;
 Servo backpressure_valve;
 
-float extern_close_SP = 1.0;
+float extern_close_SP = 0.0;
 float back_pressure_SP = 0.0;
 
-const int pos_external_zero = -25;
+const int pos_external_zero = -10;
 const int pos_backpres_zero = 5.3;
 
 // === INNER VALVE CONTROL ===
@@ -54,16 +53,13 @@ const int borneIN2 = 8;
 
 const float voltage_open = 4.41;
 const float voltage_close = 0.5;
-const float voltage_generator = 12.0;
+const float voltage_generator = 8.0;
 
 const int max_speed = 255;
 
 double inner_measured = 0.0;
-double inner_close_SP = 1.0;
-double previous_SP = inner_close_SP;
+double inner_close_SP = 0.0;
 double controllerOutput = 0.0;
-// boolean to check when the inner SP has been changed to zero
-bool innerSP_changed = false;
 
 double Kp = 200.0, Ki = 150.0, Kd = 10.0;
 PID openingPID(&inner_measured, &controllerOutput, &inner_close_SP, Kp, Ki, Kd, DIRECT);
@@ -96,8 +92,6 @@ void rotationSpeedForward(int speed) {
   analogWrite(borneENA, speed);
 }
 
-
-
 void readSerialData() {
   if (Serial.available()) {
     String input = Serial.readStringUntil('\n'); // lit jusqu'à retour à la ligne
@@ -123,12 +117,6 @@ void readSerialData() {
       inner_close_SP   = constrain(inner_close_str.toFloat(),0,1);
       extern_close_SP  = constrain(extern_close_str.toFloat(),0,1);
       back_pressure_SP = constrain(back_pressure_str.toFloat(),0,1);
-
-      // check if inner SP has changed
-      if (inner_close_SP != previous_SP){
-        innerSP_changed = true;
-        previous_SP = inner_close_SP;
-      }
     } else {
       Serial.println("Erreur : Format invalide.");
     }
@@ -181,14 +169,7 @@ void loop() {
 
   // === PID POSITION VANNE INTÉRIEURE ===
   openingPID.Compute();
-  if (inner_close_SP == 0.0 && innerSP_changed ){
-    rotationDirection(false);
-    rotationSpeedForward(255);
-    delay(1000);
-    controllerOutput = 0;
-    rotationDirection(true);
-    innerSP_changed = false;
-  } 
+  if (inner_close_SP == 0.0) controllerOutput = 0;
 
   rotationSpeedForward(controllerOutput);
 
@@ -197,11 +178,10 @@ void loop() {
   backpressure_valve.write(correctingAngle(back_pressure_SP)+pos_backpres_zero);
 
   // === DEBUG SERIAL à remettre pour debug===
-  Serial.print("temp_measured:"); Serial.print(temp_measured);
-  Serial.print(",temp_SP:"); Serial.print(temp_SP);
-  Serial.print(",inner_measured:"); Serial.print(inner_measured);
-  Serial.print(",inner_SP:"); Serial.print(inner_close_SP);
-  Serial.print(",outer_SP:"); Serial.print(extern_close_SP);
-  Serial.print(",back_press_SP:"); Serial.println(back_pressure_SP);
-
+  // Serial.print("temp_measured:"); Serial.print(temp_measured);
+  // Serial.print(",temp_SP:"); Serial.print(temp_SP);
+  // Serial.print(",inner_measured:"); Serial.print(inner_measured);
+  // Serial.print(",inner_SP:"); Serial.print(inner_close_SP);
+  // Serial.print(",back_press_SP:"); Serial.print(back_pressure_SP);
+  // Serial.print(",outer_SP:"); Serial.println(extern_close_SP);
 }
