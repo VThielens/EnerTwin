@@ -50,9 +50,9 @@ def check_SP(SP_given, position_x, position_y):
     else:
         return True # si identique, on retourne TRUE
 
-def checking_function(seconds_to_wait: float, seconds_between_check: float, x_read, y_read):
+def checking_function(seconds_to_wait: float, n_check: int, x_read, y_read):
     # size of the vector
-    n_check = int(np.ceil(seconds_to_wait/seconds_between_check))
+    seconds_between_check = seconds_to_wait/n_check
     for i in range(n_check):
         time.sleep(seconds_between_check)
         check_result = check_SP(row['SP'], x_read, y_read) # check if SP != value it has been given
@@ -65,15 +65,18 @@ if __name__ == '__main__':
     ## TO FILL ####
     #########################
     # time interval to check if turbine is stopped
-    seconds_between_check = 1*60
+    seconds_between_check = 10*60
     # position to enter SP
-    x_click = 1790
-    y_click = 195
+    x_click = 1846
+    y_click = 136
     # position to read SP
-    x_read = 1734
-    y_read = 199
+    x_read = 1786
+    y_read = 137
+    # position to clear
+    x_reset = 787
+    y_reset = 831
     # open the excel with testing set
-    file = r"C:\Users\MTT\Desktop\TestTHIELENS\GitHub\testing_campaign_test.xlsx"
+    file = r"C:\Users\MTT\Desktop\TestTHIELENS\GitHub\testing_campaign.xlsx"
 
     # prepare a saving logbook
     logbook = []
@@ -120,12 +123,16 @@ if __name__ == '__main__':
             print(to_save)
             # seconds to wait before next set point
             seconds_to_wait = row['delay_before_next']*60
-            check_result = checking_function(seconds_to_wait, seconds_between_check, x_read, y_read)
+            check_result = checking_function(seconds_to_wait, 5, x_read, y_read)
             if check_result == False:
                 goToNoEGR = True
                 to_save['time'] =str(datetime.datetime.now())
                 to_save['comment'] = 'Error'
                 logbook.append(to_save)
+                # we move the cursor to the reset location
+                pya.moveTo(x_reset, y_reset)
+                # we click at that point
+                pya.click(clicks=1)
      
     # save name
     save_name = time.strftime("%Y%m%d_%H%M%S",start_time)
